@@ -37,13 +37,7 @@ export class BillingController {
   @RequirePermissions(Permission.BILLING_READ)
   @Get('plans')
   plans() {
-    return {
-      tiers: [
-        { tier: 'FREE', features: ['Patients', 'Basic scheduling'] },
-        { tier: 'PRO', features: ['Everything in Free', 'Analytics & reports', 'Telehealth'] },
-        { tier: 'ENTERPRISE', features: ['Everything in Pro', 'AI agents', 'FHIR/HL7/PACS interop'] },
-      ],
-    };
+    return this.billing.plans();
   }
 
   // Stripe webhook — must be public and verified by signature (raw body).
