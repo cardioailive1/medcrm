@@ -698,10 +698,66 @@ body{font-family:var(--font);background:var(--bg);color:var(--text1);font-size:1
 .pw-reqs span.ok{color:#166534;background:#dcfce7}
 .login-consent{display:flex;gap:8px;align-items:flex-start;font-size:11px;color:var(--text2);line-height:1.5;margin:6px 0 14px;cursor:pointer}
 .login-consent input{margin-top:2px;flex-shrink:0}
+
+/* plans & billing modal */
+.modal-card.wide{width:780px}
+.plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:6px}
+.plan{border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;flex-direction:column;position:relative}
+.plan.pop{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.plan-badge{position:absolute;top:-9px;left:16px;background:var(--accent);color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.5px}
+.plan-name{font-size:13px;font-weight:700;color:var(--text1)}
+.plan-price{font-size:24px;font-weight:700;color:var(--text1);margin:6px 0 0}
+.plan-price small{font-size:11px;font-weight:500;color:var(--text3)}
+.plan-blurb{font-size:11px;color:var(--text3);min-height:44px;margin-bottom:8px}
+.plan-feats{list-style:none;padding:0;margin:0 0 12px;font-size:11px;color:var(--text2);flex:1}
+.plan-feats li{padding:3px 0 3px 16px;position:relative}
+.plan-feats li:before{content:'✓';position:absolute;left:0;color:var(--green);font-weight:700}
+.plan-cta{width:100%;padding:8px;border:none;border-radius:6px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff}
+.plan-cta.ghost{background:var(--bg);color:var(--text2);border:1px solid var(--border)}
+.plan-cta:disabled{opacity:.55;cursor:default}
+
+/* account-creation wall — split hero + highlights */
+.login-shell{display:flex;background:var(--surface);border-radius:14px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35);max-width:860px;width:100%;max-height:94vh}
+.login-hero{flex:1;min-width:300px;background:linear-gradient(160deg,#0d9488 0%,#155e8f 55%,#13294b 100%);color:#fff;padding:34px 30px;display:flex;flex-direction:column;justify-content:center}
+.login-hero h2{font-size:20px;font-weight:700;line-height:1.3;margin:0 0 8px}
+.login-hero p.sub{font-size:12px;opacity:.85;margin:0 0 22px;line-height:1.55}
+.hl{display:flex;gap:12px;margin-bottom:15px}
+.hl-ico{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hl-t{font-size:13px;font-weight:600;line-height:1.2}
+.hl-d{font-size:11px;opacity:.82;line-height:1.4;margin-top:2px}
+.hl-note{margin-top:12px;font-size:10px;opacity:.7;border-top:1px solid rgba(255,255,255,.2);padding-top:12px}
+.login-shell .login-card{box-shadow:none;border-radius:0;width:380px;max-width:100%;overflow-y:auto}
+@media (max-width:720px){.login-shell{flex-direction:column;max-width:400px}.login-hero{display:none}.login-shell .login-card{width:100%}}
+
+/* Corverxis brand — account-creation wall (navy #021830 / cyan #00D5FF) */
+#loginOverlay{background:linear-gradient(135deg,#00152D 0%,#021830 100%)}
+#loginOverlay .login-hero{background:radial-gradient(circle at 100% 100%, rgba(0,213,255,.14), transparent 52%), #021830}
+.login-hero-logo{display:block;width:72%;max-width:236px;height:auto;margin:0 0 22px;border-radius:8px}
+#loginOverlay .hl-ico{background:rgba(0,213,255,.16)}
+#loginOverlay .hl-note{border-top-color:rgba(0,213,255,.25)}
+#loginOverlay .login-btn{background:#00D5FF;color:#021830;font-weight:700}
+#loginOverlay .login-btn:hover{background:#33dfff}
+#loginOverlay .login-btn:disabled{opacity:.6}
+#loginOverlay .login-field input:focus{border-color:#00D5FF;box-shadow:0 0 0 2px rgba(0,213,255,.15)}
+#loginOverlay .login-tab.active{color:#021830}
+#loginOverlay .login-logo{background:linear-gradient(135deg,#00D5FF,#021830)}
+#loginOverlay .pw-reqs span.ok{color:#023047;background:rgba(0,213,255,.22)}
 </style>
 </head>
 <body>
 <div id="loginOverlay">
+  <div class="login-shell">
+  <div class="login-hero">
+    <img class="login-hero-logo" src="corverxis_logo.jpg" alt="Corverxis Technologies"/>
+    <h2>The healthcare CRM your practice actually runs on.</h2>
+    <p class="sub">Patients, scheduling, telehealth, and reporting in one secure workspace — built for clinical teams.</p>
+    <div class="hl"><div class="hl-ico"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="white" stroke-width="1.4"/><path d="M2.5 14c0-3 2.5-4.5 5.5-4.5s5.5 1.5 5.5 4.5" stroke="white" stroke-width="1.4" stroke-linecap="round"/></svg></div><div><div class="hl-t">Unified patient CRM</div><div class="hl-d">Patients, care pipeline, and communications in one place.</div></div></div>
+    <div class="hl"><div class="hl-ico"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3.5" width="9" height="9" rx="1.6" stroke="white" stroke-width="1.4"/><path d="M11 7l3.5-2v6L11 9" stroke="white" stroke-width="1.4" stroke-linejoin="round"/></svg></div><div><div class="hl-t">Telehealth built in</div><div class="hl-d">Run virtual visits and manage the live queue.</div></div></div>
+    <div class="hl"><div class="hl-ico"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.5l1.6 3.6 3.9.4-2.9 2.6.8 3.8L8 12.6 4.6 12.5l.8-3.8L2.5 6.1l3.9-.4L8 1.5z" stroke="white" stroke-width="1.3" stroke-linejoin="round"/></svg></div><div><div class="hl-t">AI agents for admin &amp; reporting</div><div class="hl-d">Automate intake and surface insights from your data.</div></div></div>
+    <div class="hl"><div class="hl-ico"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 10l4-4M5 11l-1.5 1.5a2.1 2.1 0 01-3-3L2 8M11 5l1.5-1.5a2.1 2.1 0 013 3L14 10" stroke="white" stroke-width="1.4" stroke-linecap="round"/></svg></div><div><div class="hl-t">FHIR / HL7 / PACS modules</div><div class="hl-d">Interoperability framework for records and imaging.</div></div></div>
+    <div class="hl"><div class="hl-ico"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1.8l5 2v3.4c0 3.2-2.1 5.6-5 6.9-2.9-1.3-5-3.7-5-6.9V3.8l5-2z" stroke="white" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 8l1.4 1.4L10.2 6.5" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><div class="hl-t">Security-first</div><div class="hl-d">Role-based access, audit logging, and auto-logoff.</div></div></div>
+    <div class="hl-note">Not for real PHI until BAAs &amp; compliance review are complete.</div>
+  </div>
   <div class="login-card">
     <div class="login-brand">
       <div class="login-logo"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 1.5L9 16.5M1.5 9H16.5" stroke="white" stroke-width="2.5" stroke-linecap="round"/><circle cx="9" cy="9" r="3.5" fill="white" opacity="0.3"/></svg></div>
@@ -734,6 +790,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text1);font-size:1
       <div id="registerError" class="login-error"></div>
     </form>
     <div class="login-hint">Protected health information demo · Sessions auto-expire after inactivity.</div>
+    </div>
   </div>
 </div>
 <div class="app">
@@ -1943,7 +2000,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text1);font-size:1
               <div class="card" style="padding:14px 16px"><div style="font-weight:600;font-size:13px;margin-bottom:4px">Orthanc PACS · DICOM</div><div style="font-size:11px;color:var(--text3);margin-bottom:10px">Imaging studies, DICOMweb WADO-RS</div><span class="status-badge badge-green">Connected</span></div>
               <div class="card" style="padding:14px 16px"><div style="font-weight:600;font-size:13px;margin-bottom:4px">Cerner ADT · HL7 v2</div><div style="font-size:11px;color:var(--text3);margin-bottom:10px">Admission/discharge/transfer feed</div><span class="status-badge badge-green">Connected</span></div>
               <div class="card" style="padding:14px 16px"><div style="font-weight:600;font-size:13px;margin-bottom:4px">Twilio Video · Telehealth</div><div style="font-size:11px;color:var(--text3);margin-bottom:10px">WebRTC video sessions, recordings</div><span class="status-badge badge-green">Connected</span></div>
-              <div class="card" style="padding:14px 16px"><div style="font-weight:600;font-size:13px;margin-bottom:4px">Stripe Billing</div><div style="font-size:11px;color:var(--text3);margin-bottom:10px">Patient payments and invoicing</div><span class="status-badge badge-amber">Setup needed</span></div>
+              <div class="card" style="padding:14px 16px;cursor:pointer" onclick="medcrmShowPlans()"><div style="font-weight:600;font-size:13px;margin-bottom:4px">Subscription &amp; Plans</div><div style="font-size:11px;color:var(--text3);margin-bottom:10px">View plans, upgrade, or manage billing</div><span class="status-badge badge-blue">View plans →</span></div>
             </div>
           </div>
           <div class="settings-section" id="sec-compliance">
@@ -3922,6 +3979,71 @@ body{font-family:var(--font);background:var(--bg);color:var(--text1);font-size:1
   window.selMetric = function (el) { document.querySelectorAll('.rb-metric').forEach(function (m) { m.classList.remove('active-rm'); }); el.classList.add('active-rm'); };
   window.cmsTab = function (id, el) { document.querySelectorAll('.cms-pane').forEach(function (p) { p.classList.remove('active-cp'); }); var p = document.getElementById('cp-' + id); if (p) p.classList.add('active-cp'); document.querySelectorAll('.cms-tab').forEach(function (t) { t.classList.remove('active-ct'); }); if (el) el.classList.add('active-ct'); };
   window.satTab = function (id, el) { document.querySelectorAll('.sat-pane').forEach(function (p) { p.classList.remove('active-sp'); }); var p = document.getElementById('sp-' + id); if (p) p.classList.add('active-sp'); document.querySelectorAll('.sat-tab').forEach(function (t) { t.classList.remove('active-st2'); }); if (el) el.classList.add('active-st2'); };
+  /* ---- Plans & billing ---- */
+  function showModal(title, html, wide) {
+    closeForm();
+    var ov = document.createElement('div'); ov.className = 'modal-overlay'; ov.id = 'modalOverlay';
+    ov.innerHTML = '<div class="modal-card' + (wide ? ' wide' : '') + '"><div class="modal-head"><span>' + esc(title) + '</span><button class="modal-x" type="button" onclick="medcrmCloseForm()">×</button></div><div class="modal-body">' + html + '</div></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', function (e) { if (e === null || e.target === ov) closeForm(); });
+  }
+
+  async function showPlans() {
+    showModal('Plans & Billing', '<div class="empty-state">Loading…</div>', true);
+    try {
+      var data = await api('/billing/plans');
+      var me = window.__me || {};
+      var current = me.organization ? me.organization.tier : 'FREE';
+      var cards = data.tiers.map(function (t) {
+        var isCurrent = t.tier === current;
+        var priceHtml;
+        if (t.tier === 'FREE') priceHtml = '<div class="plan-price">$0</div>';
+        else if (t.price && t.price.custom) priceHtml = '<div class="plan-price">$' + t.price.monthly + '+<small>/provider/mo</small></div>';
+        else priceHtml = '<div class="plan-price">$' + t.price.monthly + '<small>/provider/mo</small></div>';
+        var annual = (t.tier !== 'FREE') ? '<div style="font-size:10px;color:var(--text3);margin-bottom:8px">or $' + t.price.annualMonthly + '/mo billed annually (' + data.annualDiscountPct + '% off)</div>' : '<div style="height:14px"></div>';
+        var feats = t.features.map(function (f) { return '<li>' + esc(f) + '</li>'; }).join('');
+        var btn;
+        if (isCurrent) btn = '<button class="plan-cta ghost" disabled>Current plan</button>';
+        else if (t.paymentLink) btn = '<button class="plan-cta" onclick="medcrmUpgradeLink(\'' + t.paymentLink + '\',\'' + t.tier + '\')">' + esc(t.cta) + '</button>';
+        else btn = '<button class="plan-cta" onclick="medcrmUpgrade(\'' + t.tier + '\')">' + esc(t.cta) + '</button>';
+        return '<div class="plan' + (t.popular ? ' pop' : '') + '">' + (t.popular ? '<span class="plan-badge">Most popular</span>' : '') +
+          '<div class="plan-name">' + esc(t.name) + '</div>' + priceHtml + annual +
+          '<div class="plan-blurb">' + esc(t.blurb) + '</div><ul class="plan-feats">' + feats + '</ul>' + btn + '</div>';
+      }).join('');
+      var manage = (current && current !== 'FREE') ? '<div style="text-align:center;margin-top:14px"><a href="#" onclick="medcrmManageBilling();return false;" style="font-size:12px;color:var(--accent)">Manage billing / cancel →</a></div>' : '';
+      showModal('Plans & Billing', '<div class="plan-grid">' + cards + '</div>' + manage +
+        '<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:12px">Prices are per active provider, per month. Enterprise is custom-quoted.</div>', true);
+    } catch (e) {
+      showModal('Plans & Billing', '<div class="empty-state">' + esc(gated(e) ? 'You need billing access to view plans.' : 'Could not load plans: ' + e.message) + '</div>', true);
+    }
+  }
+  window.medcrmShowPlans = showPlans;
+
+  window.medcrmUpgrade = async function (tier) {
+    try {
+      var res = await api('/billing/checkout', { method: 'POST', body: { tier: tier } });
+      if (res && res.url) window.location.href = res.url;
+    } catch (e) { alert(gated(e) ? 'Only admins/billing can start checkout.' : 'Checkout failed: ' + e.message); }
+  };
+  // Stripe Payment Link path: attach the org + tier so the webhook can map the purchase back.
+  window.medcrmUpgradeLink = function (url, tier) {
+    var me = window.__me || {};
+    var org = me.organization ? me.organization.id : '';
+    var sep = url.indexOf('?') >= 0 ? '&' : '?';
+    var full = url + sep + 'client_reference_id=' + encodeURIComponent(org + '__' + tier);
+    if (me.email) full += '&prefilled_email=' + encodeURIComponent(me.email);
+    window.location.href = full;
+  };
+  window.medcrmManageBilling = async function () {
+    try {
+      var res = await api('/billing/portal', { method: 'POST' });
+      if (res && res.url) window.location.href = res.url;
+    } catch (e) { alert(gated(e) ? 'Only admins/billing can manage billing.' : 'Could not open portal: ' + e.message); }
+  };
+  window.medcrmContactSales = function () {
+    window.location.href = 'mailto:sales@medcrm.example?subject=MedCRM%20Enterprise%20inquiry';
+  };
+
   window.medcrmAddPatient = window.medcrmAddPatientForm;
 })();
 
