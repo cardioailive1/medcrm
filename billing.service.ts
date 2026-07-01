@@ -52,6 +52,7 @@ export class BillingService {
     const session = await this.stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
+      client_reference_id: `${organizationId}__${tier}`,
       line_items: [{ price: this.priceFor(tier), quantity: 1 }],
       success_url: `${appUrl}/?billing=success`,
       cancel_url: `${appUrl}/?billing=cancel`,
@@ -82,6 +83,8 @@ export class BillingService {
   async handleEvent(event: Stripe.Event) {
     switch (event.type) {
       case 'checkout.session.completed':
+        await this.handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
+        break;
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted':
@@ -93,18 +96,51 @@ export class BillingService {
     return { received: true };
   }
 
-  private async syncSubscription(event: Stripe.Event) {
-    // Resolve the subscription object regardless of event shape.
-    let subscription: Stripe.Subscription | null = null;
-
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object as Stripe.Checkout.Session;
-      if (session.subscription) {
-        subscription = await this.stripe.subscriptions.retrieve(session.subscription as string);
-      }
-    } else {
-      subscription = event.data.object as Stripe.Subscription;
+  // Works for BOTH the Checkout Sessions API and Payment Links. Payment Links create the
+  // customer at purchase time, so we resolve the org via client_reference_id ("orgId__TIER")
+  // and store the customer id so later subscription.* events map back by customer.
+  private async handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+    const ref = session.client_reference_id ?? '';
+    const [orgId, tierHint] = ref.split('__');
+    if (!orgId) {
+      this.logger.warn('checkout.session.completed without a resolvable client_reference_id');
+      return;
     }
+    const org = await this.prisma.organization.findUnique({ where: { id: orgId } });
+    if (!org) {
+      this.logger.warn(`No organization for id ${orgId}`);
+      return;
+    }
+
+    let subscription: Stripe.Subscription | null = null;
+    if (session.subscription) {
+      subscription = await this.stripe.subscriptions.retrieve(session.subscription as string);
+    }
+
+    const tier =
+      tierHint && Object.values(Tier).includes(tierHint as Tier)
+        ? (tierHint as Tier)
+        : subscription
+          ? this.tierFromSubscription(subscription)
+          : Tier.PRO;
+
+    await this.prisma.organization.update({
+      where: { id: org.id },
+      data: {
+        stripeCustomerId: (session.customer as string) ?? org.stripeCustomerId,
+        stripeSubscriptionId: subscription?.id ?? org.stripeSubscriptionId,
+        tier,
+        subscriptionStatus: SubscriptionStatus.ACTIVE,
+        currentPeriodEnd: subscription?.current_period_end
+          ? new Date(subscription.current_period_end * 1000)
+          : org.currentPeriodEnd,
+      },
+    });
+    this.logger.log(`Org ${org.id} -> tier=${tier} status=ACTIVE (checkout)`);
+  }
+
+  private async syncSubscription(event: Stripe.Event) {
+    const subscription = event.data.object as Stripe.Subscription;
     if (!subscription) return;
 
     const customerId = subscription.customer as string;
@@ -154,5 +190,48 @@ export class BillingService {
       case 'incomplete_expired': return SubscriptionStatus.CANCELED;
       default: return SubscriptionStatus.INACTIVE;
     }
+  }
+
+  // Public plan catalog surfaced at GET /api/billing/plans and rendered by the app.
+  // Prices reflect the pricing model (per-provider/month); Enterprise is "from"/custom-quoted.
+  plans() {
+    const annualDiscount = 0.17;
+    const perProvider = (m: number) => ({
+      monthly: m,
+      annualMonthly: Math.round(m * (1 - annualDiscount)),
+      annualTotal: Math.round(m * (1 - annualDiscount) * 12),
+    });
+    // Public Stripe Payment Link URLs (safe to expose). Override via env per environment.
+    const proLink =
+      this.config.get<string>('STRIPE_PAYMENT_LINK_PRO') ??
+      'https://buy.stripe.com/6oU7sLatcf9XdLl6Vk1oI0m';
+    const entLink =
+      this.config.get<string>('STRIPE_PAYMENT_LINK_ENTERPRISE') ??
+      'https://buy.stripe.com/8x26oH30K0f3cHhfrQ1oI0n';
+    return {
+      metric: 'per provider / month',
+      annualDiscountPct: Math.round(annualDiscount * 100),
+      currency: 'usd',
+      tiers: [
+        {
+          tier: 'FREE', name: 'Free', price: perProvider(0), popular: false,
+          cta: 'Current plan', paymentLink: null,
+          blurb: 'Core clinical CRM to get started.',
+          features: ['Patients & scheduling', 'Care pipeline', 'Communications', 'Clinical / nursing / physician boards', 'Team & role-based access'],
+        },
+        {
+          tier: 'PRO', name: 'Pro', price: perProvider(79), popular: true,
+          cta: 'Upgrade to Pro', paymentLink: proLink,
+          blurb: 'For growing practices that need telehealth, analytics, and AI assist.',
+          features: ['Everything in Free', 'Telehealth', 'Analytics & patient stats', 'Customer-satisfaction surveys', 'AI agents activity', 'Administrative Task Agent', 'Reporting Agent + scheduled reports'],
+        },
+        {
+          tier: 'ENTERPRISE', name: 'Enterprise', price: { ...perProvider(300), custom: true }, popular: false,
+          cta: 'Upgrade to Enterprise', paymentLink: entLink,
+          blurb: 'For health systems needing interoperability and quality reporting.',
+          features: ['Everything in Pro', 'FHIR / HL7 / PACS interoperability', 'CMS quality measures (MIPS / PI / STAR)', 'BAA, SSO & audit-log export', 'Dedicated support + SLA', 'Implementation & onboarding'],
+        },
+      ],
+    };
   }
 }
