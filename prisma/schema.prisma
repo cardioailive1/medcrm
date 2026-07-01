@@ -1,0 +1,413 @@
+// MedCRM — Prisma schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  PHYSICIAN
+  NURSE
+  STAFF
+  BILLING
+}
+
+enum Tier {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  INACTIVE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum PatientStatus {
+  ACTIVE
+  INACTIVE
+  NEW
+  AT_RISK
+}
+
+model Organization {
+  id                   String             @id @default(cuid())
+  name                 String
+  tier                 Tier               @default(FREE)
+  subscriptionStatus   SubscriptionStatus @default(INACTIVE)
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  currentPeriodEnd     DateTime?
+  users                User[]
+  patients             Patient[]
+  auditLogs            AuditLog[]
+  appointments         Appointment[]
+  telehealthSessions   TelehealthSession[]
+  pipelineEntries      PipelineEntry[]
+  messages             Message[]
+  agentActivities      AgentActivity[]
+  workflowTasks        WorkflowTask[]
+  surveys              Survey[]
+  cmsMeasures          CmsMeasure[]
+  interopResources     InteropResource[]
+  adminTasks           AdminTask[]
+  automations          Automation[]
+  complianceItems      ComplianceItem[]
+  scheduledReports     ScheduledReport[]
+  insights             Insight[]
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+}
+
+model User {
+  id             String         @id @default(cuid())
+  email          String         @unique
+  passwordHash   String
+  firstName      String
+  lastName       String
+  role           Role           @default(STAFF)
+  isActive       Boolean        @default(true)
+  // Security-Rule technical safeguards: brute-force lockout + login tracking
+  failedLoginCount Int          @default(0)
+  lockedUntil      DateTime?
+  lastLoginAt      DateTime?
+  passwordChangedAt DateTime?
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  refreshTokens  RefreshToken[]
+  auditLogs      AuditLog[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([organizationId])
+}
+
+// Hashed, rotating refresh tokens (one row per active session)
+model RefreshToken {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Patient {
+  id             String        @id @default(cuid())
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  mrn            String
+  firstName      String
+  lastName       String
+  dob            DateTime
+  department     String?
+  providerName   String?
+  status         PatientStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([organizationId, mrn])
+  @@index([organizationId])
+}
+
+// Append-only audit trail (foundational for healthcare access logging)
+model AuditLog {
+  id             String        @id @default(cuid())
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  organizationId String?
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId         String?
+  action         String
+  entity         String?
+  entityId       String?
+  ip             String?
+  createdAt      DateTime      @default(now())
+
+  @@index([organizationId])
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────
+// Clinical & operational domain (backs the dashboard pages)
+// ─────────────────────────────────────────────────────────
+
+enum Modality {
+  IN_PERSON
+  TELEHEALTH
+}
+
+enum AppointmentStatus {
+  CONFIRMED
+  CHECKED_IN
+  WAITING
+  COMPLETED
+  NO_SHOW
+  CANCELED
+}
+
+enum SessionStatus {
+  SCHEDULED
+  WAITING
+  IN_SESSION
+  COMPLETED
+}
+
+enum PipelineStage {
+  REFERRAL
+  ASSESSMENT
+  TREATMENT
+  MONITORING
+  DISCHARGED
+}
+
+enum SurveyStatus {
+  NEW
+  REVIEW
+  ACTION
+  ESCALATED
+  RESOLVED
+}
+
+model Appointment {
+  id             String            @id @default(cuid())
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  patientName    String
+  providerName   String?
+  department     String?
+  type           String?
+  modality       Modality          @default(IN_PERSON)
+  startsAt       DateTime
+  durationMin    Int               @default(30)
+  status         AppointmentStatus @default(CONFIRMED)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([organizationId, startsAt])
+}
+
+model TelehealthSession {
+  id              String        @id @default(cuid())
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId  String
+  patientName     String
+  providerName    String?
+  department      String?
+  type            String?
+  status          SessionStatus @default(SCHEDULED)
+  waitMinutes     Int?
+  durationSec     Int?
+  scheduledAt     DateTime?
+  recordingReady  Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([organizationId])
+}
+
+model PipelineEntry {
+  id             String        @id @default(cuid())
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  patientName    String
+  department     String?
+  stage          PipelineStage @default(REFERRAL)
+  status         String?
+  note           String?
+  estVisits      String?
+  dueDate        DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([organizationId, stage])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  senderName     String
+  preview        String?
+  body           String
+  unread         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+}
+
+model AgentActivity {
+  id             String       @id @default(cuid())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  source         String       // TRIAGE | LAB | BILLING | FOLLOW-UP | ADMIN | REPORT | FHIR | SYSTEM ...
+  message        String
+  level          String       @default("info") // info | warn | error
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, createdAt])
+}
+
+model WorkflowTask {
+  id             String       @id @default(cuid())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  board          String       // clinical | nursing | physician
+  lane           String       // column key within the board
+  title          String
+  subtitle       String?
+  priority       String       @default("normal") // urgent | high | normal | low
+  assignee       String?
+  tags           String[]
+  meta           String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId, board])
+}
+
+model Survey {
+  id             String       @id @default(cuid())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  patientName    String?
+  department     String?
+  rating         Int          // 1..5
+  comment        String?
+  status         SurveyStatus @default(NEW)
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, status])
+}
+
+model CmsMeasure {
+  id             String       @id @default(cuid())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  program        String       // MIPS | PI | VBC | STAR ...
+  name           String
+  value          Float
+  target         Float?
+  unit           String?      // % | pts | $
+  status         String       @default("met") // met | below | borderline
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId, program])
+}
+
+// Representational store for interoperability artifacts.
+// NOTE: not a live FHIR/HL7/PACS connection — it persists resource records only.
+model InteropResource {
+  id             String       @id @default(cuid())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  kind           String       // FHIR | HL7 | PACS
+  resourceType   String       // Patient | Observation | ADT^A01 | MRI ...
+  label          String
+  meta           String?
+  status         String       @default("synced")
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, kind])
+}
+
+// ─────────────────────────────────────────────────────────
+// Administrative Task Agent + Reporting Agent
+// ─────────────────────────────────────────────────────────
+
+enum AdminTaskStatus {
+  QUEUED
+  IN_PROGRESS
+  COMPLETE
+  PENDING
+  DUE_SOON
+}
+
+enum ComplianceStatus {
+  ACTION_NEEDED
+  DUE_SOON
+  IN_PROGRESS
+  COMPLETE
+}
+
+enum InsightImpact {
+  HIGH
+  POSITIVE
+  ATTENTION
+}
+
+model AdminTask {
+  id             String          @id @default(cuid())
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  category       String          // INS | REF | INT | COMP | DOC | SCHED | LIC
+  title          String
+  subtitle       String?
+  status         AdminTaskStatus @default(QUEUED)
+  createdAt      DateTime        @default(now())
+
+  @@index([organizationId, status])
+}
+
+model Automation {
+  id             String       @id @default(cuid())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  name           String
+  description    String?
+  runs           Int          @default(0)
+  active         Boolean      @default(true)
+  lastRunAt      DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+}
+
+model ComplianceItem {
+  id             String           @id @default(cuid())
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  title          String
+  subtitle       String?
+  status         ComplianceStatus @default(IN_PROGRESS)
+  dueDate        DateTime?
+  createdAt      DateTime         @default(now())
+
+  @@index([organizationId, status])
+}
+
+model ScheduledReport {
+  id             String       @id @default(cuid())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  name           String
+  schedule       String       // e.g. "Daily · 5:00 PM"
+  format         String?      // PDF | Excel | CSV | JSON
+  recipients     String?
+  active         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+}
+
+model Insight {
+  id             String        @id @default(cuid())
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  title          String
+  body           String
+  impact         InsightImpact @default(ATTENTION)
+  createdAt      DateTime      @default(now())
+
+  @@index([organizationId])
+}
