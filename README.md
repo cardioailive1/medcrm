@@ -180,3 +180,24 @@ npm run prisma:seed
 npm run start:dev     # API + app at http://localhost:3000 · docs at /api/docs
 npm test              # run the unit suite
 ```
+
+## Pricing & plans
+- `GET /api/billing/plans` returns the tier catalog with per-provider pricing (Pro $79/mo,
+  Enterprise from $300/mo custom), annual discount, and feature lists. Frontend renders a
+  **Plans & Billing** modal (Settings → Integrations → "Subscription & Plans") with working
+  **Upgrade** (Stripe Checkout) and **Manage billing** (Stripe Portal) actions.
+- Pricing rationale + a live **Excel pricing model** (`medcrm_pricing_model.xlsx`) accompany
+  this: edit cost-to-serve, margin, seats, and churn to back-solve prices and see MRR/ARR and
+  unit economics. Numbers are market-derived reference points — validate before launch.
+
+## Stripe Payment Links (alternative to API checkout)
+The app supports **both** billing paths:
+- **Payment Links** (simplest): set `STRIPE_PAYMENT_LINK_PRO` / `STRIPE_PAYMENT_LINK_ENTERPRISE`.
+  The upgrade buttons redirect to the link with `?client_reference_id=<orgId>__<TIER>` so the
+  webhook can map the purchase back to the organization.
+- **Checkout Sessions API**: set `STRIPE_PRICE_PRO` / `STRIPE_PRICE_ENTERPRISE` (per-seat capable).
+
+**Required for either path:** create a webhook endpoint at `{APP_URL}/api/billing/webhook`,
+subscribe to `checkout.session.completed` and `customer.subscription.{updated,deleted}`, and set
+`STRIPE_WEBHOOK_SECRET`. `checkout.session.completed` is what flips the org's tier to ACTIVE after
+a Payment Link purchase.
