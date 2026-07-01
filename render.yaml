@@ -11,7 +11,8 @@ services:
     runtime: node
     plan: free            # upgrade to starter+ for production
     region: oregon
-    buildCommand: npm ci && npm run build && npx prisma migrate deploy
+    # Resilient: uses the lockfile when present (fast, reproducible), else falls back.
+    buildCommand: (npm ci || npm install) && npm run build && npx prisma migrate deploy
     startCommand: node dist/main.js
     healthCheckPath: /health
     autoDeploy: true
